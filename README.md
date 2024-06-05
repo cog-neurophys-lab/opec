@@ -1,14 +1,14 @@
 # Python Example Client for OpenEphys ZMQ Interface
 
-This project will provide a small library for receiving data from the OpenEphys ZMQ interface (currently at version v0.3.2)
-
-Code and descriptions code is from https://github.com/open-ephys-plugins/zmq-interface. 
+This project will provide a small library for receiving data from the OpenEphys ZMQ
+interface (currently at version v0.3.2) Initial code and descriptions are from
+https://github.com/open-ephys-plugins/zmq-interface. 
 
 
 ## Heartbeat messages
 
-
-In order for a client to be detected, it must periodically send heartbeat messages to the plugin's listening port. Each heartbeat message is a JSON string with the following fields:
+In order for a client to be detected, it must periodically send heartbeat messages to the
+plugin's listening port. Each heartbeat message is a JSON string with the following fields:
 
 ```json
     "application" : application name
@@ -18,18 +18,16 @@ In order for a client to be detected, it must periodically send heartbeat messag
 
 The recommended heartbeat interval is 2 seconds. 
 
-
 ## Data Packets
-
 
 The ZMQ Interface sends multi-part ZMQ messages. Each message consists of three parts:
 
 ### Message Envelope
 
-Contains the type of message being received (`data`, `spike`, or `event`), as well as the index of the message (`message_num`).
+Contains the type of message being received (`data`, `spike`, or `event`), as well as the
+index of the message (`message_num`).
 
 ### Message Header
-
 
 A JSON string containing information about the incoming data packet:
 
@@ -44,6 +42,7 @@ A JSON string containing information about the incoming data packet:
 ```
 
 #### Event data
+
 ```json
     "stream" : stream name
     "source_node" : processor ID that generated the event
@@ -65,8 +64,6 @@ A JSON string containing information about the incoming data packet:
 ```
 
 #### Message Data
-
-
 
 - **Continuous**: Continuous data from one channel
 - **TTL Event**: "Event data (in order) = {1Byte\: 'Event Line', 1 Byte\: 'Event state(0 or 1)', 8 Bytes:'TTL Word'}
