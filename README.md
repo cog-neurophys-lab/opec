@@ -22,12 +22,12 @@ The recommended heartbeat interval is 2 seconds.
 
 The ZMQ Interface sends multi-part ZMQ messages. Each message consists of three parts:
 
-### Message Envelope
+### 1. Message Envelope
 
 Contains the type of message being received (`data`, `spike`, or `event`), as well as the
 index of the message (`message_num`).
 
-### Message Header
+### 2. Message Header
 
 A JSON string containing information about the incoming data packet:
 
@@ -63,7 +63,7 @@ A JSON string containing information about the incoming data packet:
     "threshold" : threshold values across all channels
 ```
 
-#### Message Data
+### 3. Message Data
 
 - **Continuous**: Continuous data from one channel
 - **TTL Event**: "Event data (in order) = {1Byte\: 'Event Line', 1 Byte\: 'Event state(0 or 1)', 8 Bytes:'TTL Word'}
