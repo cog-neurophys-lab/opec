@@ -3,7 +3,7 @@ import logging
 
 
 def main():
-    c = Client(app_name="Foo")
+    c = Client(app_name="Python Test Client")
 
     c.loop()
 
