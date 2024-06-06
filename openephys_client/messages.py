@@ -25,11 +25,20 @@ class HeartBeatMessage:
 
 @dataclass
 class ContinuousDataHeaderMessage:
-    stream: str  # stream name
-    channel_num: str  # local channel index
-    num_samples: int  # num of samples in this buffer
-    sample_num: int  # index of first sample
-    sample_rate: float  # sampling rate of this channel
+
+    @dataclass
+    class ContinuousDataHeaderMessageContent:
+        stream: str  # stream name
+        channel_num: str  # local channel index
+        num_samples: int  # num of samples in this buffer
+        sample_num: int  # index of first sample
+        sample_rate: float  # sampling rate of this channel
+
+    message_num: int  # message number
+    type: str  # type of message, should always be "continuous"
+    content: ContinuousDataHeaderMessageContent
+    data_size: int  # size of the data buffer in bytes
+    timestamp: int  # timestamp of the message in milliseconds
 
     def to_json(self) -> str:
         return json.dumps(self.__dict__)
@@ -40,10 +49,19 @@ class ContinuousDataHeaderMessage:
 
 @dataclass
 class EventDataHeaderMessage:
-    stream: str  # stream name
-    source_node: str  # processor ID that generated the event
-    type: str  # specifies TTL vs. message,
-    sample_num: int  # index of the event
+
+    @dataclass
+    class EventDataHeaderMessageContent:
+        stream: str  # stream name
+        source_node: str  # processor ID that generated the event
+        type: str  # specifies TTL vs. message,
+        sample_num: int  # index of the event
+
+    message_num: int  # message number
+    type: str  # type of message, should always be "event"
+    content = EventDataHeaderMessageContent
+    data_size: int  # size of the data buffer in bytes
+    timestamp: int  # timestamp of the message in milliseconds
 
     def to_json(self) -> str:
         return json.dumps(self.__dict__)
@@ -54,14 +72,22 @@ class EventDataHeaderMessage:
 
 @dataclass
 class SpikeDataHeaderMessage:
-    stream: str  # stream name
-    source_node: str  # processor ID that generated the spike
-    electrode: str  # name of the spike channel
-    sample_num: int  # index of the peak sample
-    num_channels: int  # total number of channels in this spike
-    num_samples: int  # total number of samples in this spike
-    sorted_id: int  # sorted ID (default = 0)
-    threshold: float  # threshold values across all channels
+
+    @dataclass
+    class SpikeDataHeaderMessageContent:
+        stream: str  # stream name
+        source_node: str  # processor ID that generated the spike
+        electrode: str  # name of the spike channel
+        sample_num: int  # index of the peak sample
+        num_channels: int  # total number of channels in this spike
+        num_samples: int  # total number of samples in this spike
+        sorted_id: int  # sorted ID (default = 0)
+        threshold: list[float]
+
+    message_num: int  # message number
+    type: str  # type of message, should always be "spike"
+    spike: SpikeDataHeaderMessageContent
+    timestamp: int  # timestamp of the message in milliseconds
 
     def to_json(self) -> str:
         return json.dumps(self.__dict__)
