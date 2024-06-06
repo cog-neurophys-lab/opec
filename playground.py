@@ -1,4 +1,5 @@
 from openephys_client import Client
+import logging
 
 
 def main():
@@ -8,4 +9,7 @@ def main():
 
 
 if __name__ == "__main__":
+    logger = logging.getLogger("logger")
+    logger.setLevel(logging.DEBUG)
+
     main()

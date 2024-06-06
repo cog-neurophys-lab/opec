@@ -13,7 +13,7 @@ logger = logging.getLogger("logger")
 class Client:
     connection: Connection
     app_name: str
-    uuid: UUID
+    uuid: UUID | str
     _heartbeat_msg: HeartBeatMessage
     heartbeat_interval_seconds: float
     message_num: int = -1
@@ -21,13 +21,13 @@ class Client:
     def __init__(
         self,
         app_name: str,
-        ip: str = "tcp://localhost",
+        ip: str = "localhost",
         data_port: int = 5556,
         heartbeat_interval_seconds: float = 2.0,
     ):
         self.connection = Connection(ip=ip, data_port=data_port)
         self.app_name = app_name
-        self.uuid = uuid4()
+        self.uuid = str(uuid4())
         self._heartbeat_msg = HeartBeatMessage(app_name=self.app_name, uuid=self.uuid)
         self.heartbeat_interval_seconds = heartbeat_interval_seconds
 
@@ -37,10 +37,10 @@ class Client:
     def check_connection(self):
         # TODO: move this to `Connection` class
         if (
-            time.time() - self.connection.last_heartbeat_time
+            time.time() - self.connection.last_heartbeat_req_time
         ) > self.heartbeat_interval_seconds:
-            if self.connection.socket_waits_reply:
-                self.connection.last_heartbeat_time += 1.0
+            if self.connection.event_socket_waits_reply:
+                self.connection.last_heartbeat_req_time += 1.0
                 if (time.time() - self.connection.last_reply_time) > 10.0:
                     self.connection.reconnect()
             else:
@@ -67,14 +67,20 @@ class Client:
 
                 envelope_msg, header_msg, data_msg = message
 
-                header = header_message_from_string(envelope_msg, header_msg)
+                header = header_message_from_string(
+                    envelope_msg.decode("utf-8"), header_msg.decode("utf-8")
+                )
+
+                if header is None:
+                    logger.error("header message could not be parsed")
+                    continue
 
                 if (
                     self.message_num != -1
                     and header.message_num != self.message_num + 1
                 ):
                     logger.warning("missing a message at number", self.message_num)
-                self.message_num = header["message_num"]
+                self.message_num = header.message_num
 
                 # TODO: process the in data_ms based on the header
                 # ...
@@ -82,10 +88,19 @@ class Client:
             # data in the event/heartbeat socket
             elif (
                 self.connection.event_socket in socks
-                and self.connection.socket_waits_reply
+                and self.connection.event_socket_waits_reply
             ):
                 message = self.connection.event_socket.recv()
                 logger.debug("event reply received")
-                self.connection.data_socket_waits_reply = False
+                self.connection.event_socket_waits_reply = False
 
         return True
+
+
+def main():
+    c = Client(app_name="Foo")
+    c.loop()
+
+
+if __name__ == "__main__":
+    main()

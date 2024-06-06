@@ -35,7 +35,7 @@ class ContinuousDataHeaderMessage:
         sample_rate: float  # sampling rate of this channel
 
     message_num: int  # message number
-    type: str  # type of message, should always be "continuous"
+    type: str  # type of message, should always be "data"
     content: ContinuousDataHeaderMessageContent
     data_size: int  # size of the data buffer in bytes
     timestamp: int  # timestamp of the message in milliseconds
@@ -97,19 +97,25 @@ class SpikeDataHeaderMessage:
 
 
 def header_message_from_string(
-    message_type: str, message: str
-) -> ContinuousDataHeaderMessage | EventDataHeaderMessage | SpikeDataHeaderMessage:
+    message_envelope: str, message: str
+) -> (
+    ContinuousDataHeaderMessage | EventDataHeaderMessage | SpikeDataHeaderMessage | None
+):
 
-    supported_headers = ["continuous", "event", "spike"]
-    if message_type not in supported_headers:
-        raise ValueError(f"Unknown header type: {message_type}")
+    supported_headers = ["DATA\x00", "EVENT\x00", "SPIKE\x00"]
+    if message_envelope not in supported_headers:
+        raise ValueError(f"Unknown header type: {message_envelope}")
 
+    json_message: dict = json.loads(message)
+    header_type = json_message["type"]
     try:
-        if message_type == "continuous":
-            return ContinuousDataHeaderMessage(message)
-        elif message_type == "event":
-            return EventDataHeaderMessage(message)
-        elif message_type == "spike":
-            return SpikeDataHeaderMessage(message)
+        if header_type == "data":
+            return ContinuousDataHeaderMessage(**json_message)
+        elif header_type == "event":
+            return EventDataHeaderMessage(**json_message)
+        elif header_type == "spike":
+            return SpikeDataHeaderMessage(**json_message)
     except Exception as e:
         raise ValueError(f"Error while parsing header message:\n\t{message}\n{e}")
+
+    return None

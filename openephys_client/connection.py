@@ -15,6 +15,7 @@ class Connection:
     poller: zmq.Poller
     event_socket_waits_reply: bool
     last_reply_time: float
+    last_heartbeat_req_time: float
 
     def __init__(self, ip: str = "localhost", data_port: int = 5556):
         self.ip = ip
@@ -36,6 +37,9 @@ class Connection:
         self.poller = zmq.Poller()
         self.poller.register(self.data_socket, zmq.POLLIN)
         self.poller.register(self.event_socket, zmq.POLLIN)
+
+        self.last_reply_time = time.time()
+        self.last_heartbeat_req_time = 0.0
 
     def receive_multipart_data_message(self) -> list[bytes]:
         try:
@@ -63,7 +67,7 @@ class Connection:
             return
         self.event_socket.send(msg.to_utf8())
         self.event_socket_waits_reply = True
-        self.last_heartbeat_time = time.time()
+        self.last_heartbeat_req_time = time.time()
 
     def reconnect(self):
         self.poller.unregister(self.event_socket)
