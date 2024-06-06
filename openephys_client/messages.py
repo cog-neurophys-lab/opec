@@ -73,11 +73,17 @@ class SpikeDataHeaderMessage:
 def header_message_from_string(
     message_type: str, message: str
 ) -> ContinuousDataHeaderMessage | EventDataHeaderMessage | SpikeDataHeaderMessage:
-    if message_type == "continuous":
-        return ContinuousDataHeaderMessage(message)
-    elif message_type == "event":
-        return EventDataHeaderMessage(message)
-    elif message_type == "spike":
-        return SpikeDataHeaderMessage(message)
-    else:
+
+    supported_headers = ["continuous", "event", "spike"]
+    if message_type not in supported_headers:
         raise ValueError(f"Unknown header type: {message_type}")
+
+    try:
+        if message_type == "continuous":
+            return ContinuousDataHeaderMessage(message)
+        elif message_type == "event":
+            return EventDataHeaderMessage(message)
+        elif message_type == "spike":
+            return SpikeDataHeaderMessage(message)
+    except Exception as e:
+        raise ValueError(f"Error while parsing header message:\n\t{message}\n{e}")
