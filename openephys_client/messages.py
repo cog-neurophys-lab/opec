@@ -1,8 +1,14 @@
 import json
+from uuid import UUID
+from dataclasses import dataclass
 
 
 class HeartBeatMessage:
-    def __init__(self, app_name: str, uuid: str):
+    application: str  # name of the application
+    uuid: str | UUID  # unique identifier for the application
+    type: str  # type of message, always "heartbeat"
+
+    def __init__(self, app_name: str, uuid: str | UUID):
         self.application = app_name
         self.uuid = uuid
         self.type = "heartbeat"
@@ -15,3 +21,63 @@ class HeartBeatMessage:
 
     def __str__(self):
         return self.to_json()
+
+
+@dataclass
+class ContinuousDataHeaderMessage:
+    stream: str  # stream name
+    channel_num: str  # local channel index
+    num_samples: int  # num of samples in this buffer
+    sample_num: int  # index of first sample
+    sample_rate: float  # sampling rate of this channel
+
+    def to_json(self) -> str:
+        return json.dumps(self.__dict__)
+
+    def from_json(self, json_str: str):
+        self.__dict__ = json.loads(json_str)
+
+
+@dataclass
+class EventDataHeaderMessage:
+    stream: str  # stream name
+    source_node: str  # processor ID that generated the event
+    type: str  # specifies TTL vs. message,
+    sample_num: int  # index of the event
+
+    def to_json(self) -> str:
+        return json.dumps(self.__dict__)
+
+    def from_json(self, json_str: str):
+        self.__dict__ = json.loads(json_str)
+
+
+@dataclass
+class SpikeDataHeaderMessage:
+    stream: str  # stream name
+    source_node: str  # processor ID that generated the spike
+    electrode: str  # name of the spike channel
+    sample_num: int  # index of the peak sample
+    num_channels: int  # total number of channels in this spike
+    num_samples: int  # total number of samples in this spike
+    sorted_id: int  # sorted ID (default = 0)
+    threshold: float  # threshold values across all channels
+
+    def to_json(self) -> str:
+        return json.dumps(self.__dict__)
+
+    def from_json(self, json_str: str):
+        self.__dict__ = json.loads(json_str)
+
+
+def header_message_from_string(
+    message_type: str, message: str
+) -> ContinuousDataHeaderMessage | EventDataHeaderMessage | SpikeDataHeaderMessage:
+    if message_type == "continuous":
+        return ContinuousDataHeaderMessage(message)
+    elif message_type == "event":
+        return EventDataHeaderMessage(message)
+    elif message_type == "spike":
+        return SpikeDataHeaderMessage(message)
+    else:
+        raise ValueError(f"Unknown header type: {message_type}")
