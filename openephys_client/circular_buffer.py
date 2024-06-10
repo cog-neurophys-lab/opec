@@ -40,50 +40,62 @@ class CircularBuffer(Sequence):
         """
         Args:
             capacity (int): Max num of rows/cols along `append_axis` to be stored in the
-                            circular buffer. allocated (int): Actual storage area for
-                            storing the continuous ring buffer.
+                            circular buffer.
+
+            allocated (int): Actual storage area for storing the continuous ring buffer.
 
                             Bigger allocated storage results in less data moves but more
                             memory consumption. Must be greater than `capacity` (depends on
                             usage patterns).
 
             initial_shape (list(row,col,..)): full array size to be allocated. Size must
-                                              match allocated in the `append_axis`
+                                              match `allocated` in the `append_axis`
                                               direction.
             dtype (type): data type to be stored append_axis (int): axis in which direction
                           data is appended to the already stored data.
+            append_axis(int): axis in which direction data is appended to the already stored data.
+
 
         Raises:
             ValueError: triggered if appends are not row/columnwise (``axis > 1``) - others
             were not tested yet
         """
         if append_axis > 1:
-            raise ValueError("Unexpected append axis, currently 0 and 1 is supported")
+            raise ValueError(
+                "Unexpected `append_axis`, currently only 0 and 1 is supported"
+            )
 
-        assert allocated >= capacity
+        assert (
+            allocated >= capacity
+        ), "Allocated space must be greater than or equal to capacity"
 
         self._arr = np.zeros(initial_shape, dtype)
         self._append_axis = append_axis
-        assert self._arr.shape[self._append_axis] == allocated
+        assert (
+            self._arr.shape[self._append_axis] == allocated
+        ), "`initial_shape` must match `allocated` int the`append_axis` direction"
 
         self._capacity = capacity
         self._allocated = allocated
         self._left_index = 0
         self._right_index = 0  # next write position
 
-    def append(self, value):
+    def append(self, value: np.ndarray):
         """Insert an item at the end of the array.
 
-        Not an O(1) operation in case the new items would span over the end of the allocated space:
-        in this case the array contents are moved to the start of the allocated space first.
+        Not an O(1) operation in case the new items would span over the end of the allocated
+        space: in this case the array contents are moved to the start of the allocated space
+        first.
 
         Args:
-            value (dtype as specified during instantiation): an array of values with the
-                expected shape (all dimensions must match `initial_shape`'s dimensions except the
-                dimension of `append_axis`).
+            value (numpy array with dtype as specified during instantiation): an array of
+            values with the
+                expected shape (all dimensions must match `initial_shape`'s dimensions
+                except the dimension of `append_axis`).
 
         Raises:
-            BufferError: if number of items in array would be over capacity limit after the append
+            BufferError: if number of items in array would be over capacity limit after the
+            append
         """
 
         appendcnt = value.shape[self._append_axis]
