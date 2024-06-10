@@ -5,8 +5,8 @@ interface (currently at version v0.3.2) Initial code and descriptions are from
 https://github.com/open-ephys-plugins/zmq-interface. 
 
 This library is based on code from the [Opeth](https://opeth.readthedocs.io) package by
-Andras Szell and others licensed with GPLv3. Opez will be used to build similar applications
-to Opeth.
+Andras Szell and others licensed with GPLv3 as well as the original example Python client by
+Francesco Battaglia. Opez can and will be used to build similar applications to Opeth.
 
 Tests: [![Tests](https://github.com/cog-neurophys-lab/opez/actions/workflows/python-app.yml/badge.svg)](https://github.com/cog-neurophys-lab/opez/actions/workflows/python-app.yml)
 
