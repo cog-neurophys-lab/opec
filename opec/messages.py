@@ -43,9 +43,6 @@ class ContinuousDataHeaderMessage:
     def to_json(self) -> str:
         return json.dumps(self.__dict__)
 
-    def from_json(self, json_str: str):
-        self.__dict__ = json.loads(json_str)
-
 
 @dataclass
 class EventDataHeaderMessage:
@@ -65,9 +62,6 @@ class EventDataHeaderMessage:
 
     def to_json(self) -> str:
         return json.dumps(self.__dict__)
-
-    def from_json(self, json_str: str):
-        self.__dict__ = json.loads(json_str)
 
 
 @dataclass
@@ -91,9 +85,6 @@ class SpikeDataHeaderMessage:
 
     def to_json(self) -> str:
         return json.dumps(self.__dict__)
-
-    def from_json(self, json_str: str):
-        self.__dict__ = json.loads(json_str)
 
 
 def header_message_from_string(
