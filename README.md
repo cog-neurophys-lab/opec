@@ -8,6 +8,7 @@ This library is based on code from the [Opeth](https://opeth.readthedocs.io) pac
 Andras Szell and others licensed with GPLv3. Opez will be used to build similar applications
 to Opeth.
 
+Tests: [![Tests](https://github.com/cog-neurophys-lab/opez/actions/workflows/python-app.yml/badge.svg)](https://github.com/cog-neurophys-lab/opez/actions/workflows/python-app.yml)
 
 ## Heartbeat messages
 
