@@ -1,6 +1,6 @@
 from opec.collector import Collector
-from .connection import Connection
-from .messages import HeartBeatMessage
+from opec.connection import Connection
+from opec.messages import HeartBeatMessage
 from uuid import UUID, uuid4
 import logging
 
@@ -70,3 +70,19 @@ class Client:
                 message = self.connection.event_socket.recv()
                 logger.debug("event reply received")
                 self.connection.event_socket_waits_reply = False
+
+            self.collector.keep_last(seconds=1)
+
+
+def main():
+    import logging
+
+    logger = logging.getLogger("logger")
+    logger.setLevel(logging.DEBUG)
+
+    c = Client(app_name="Python Test Client")
+    c.loop()
+
+
+if __name__ == "__main__":
+    main()
