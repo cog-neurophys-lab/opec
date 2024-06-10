@@ -2,20 +2,15 @@
 name = "opec"
 version = "0.1.0"
 description = "A Python client for the OpenEphys ZMQ Interface"
-license = {text = "GPLv3"}
+license = { text = "GPLv3" }
 authors = [
-  {name = "Joscha Schmiedt", email = "joscha@schmiedt.dev"},
-  {name="Andras Szell", email="szell.andris@gmail.com"},
+  { name = "Joscha Schmiedt", email = "joscha@schmiedt.dev" },
+  { name = "Andras Szell", email = "szell.andris@gmail.com" },
 ]
-maintainers = [
-  {name = "Joscha Schmiedt", email = "joscha@schmiedt.dev"}
-]
-dependencies = [
-  "numpy>=1.26,<2.0"
-  "pyzmq>=26.0,<27"
-]
+maintainers = [{ name = "Joscha Schmiedt", email = "joscha@schmiedt.dev" }]
+dependencies = ["numpy>=1.26,<2.0", "pyzmq>=26.0,<27"]
 classifiers = [
-  "Development Status :: 3 - Beta",  
+  "Development Status :: 3 - Beta",
   "Intended Audience :: Developers",
   "Topic :: Software Development :: Build Tools",
 
