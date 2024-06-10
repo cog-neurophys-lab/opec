@@ -1,4 +1,3 @@
-import logging
 import numpy as np
 
 # for Python < 3.10
@@ -31,26 +30,32 @@ class CircularBuffer(Sequence):
 
     def __init__(
         self,
-        capacity,
-        allocated,
-        initial_shape,
+        capacity: int,
+        allocated: int,
+        initial_shape: list[int],
         dtype=np.float64,
-        append_axis=0,
+        append_axis: int = 0,
         **kwargs
     ):
         """
         Args:
-            capacity (int): Max num of rows/cols along `append_axis` to be stored in the circular buffer.
-            allocated (int): Actual storage area for storing the continuous ring buffer.
-                Bigger allocated storage results in less data moves but more memory consumption.
-                Must be greater than `capacity` (depends on usage patterns).
-            initial_shape (list(row,col,..)): full array size to be allocated. Size must match allocated
-                in the `append_axis` direction.
-            dtype (type): data type to be stored
-            append_axis (int): axis in which direction data is appended to the already stored data.
+            capacity (int): Max num of rows/cols along `append_axis` to be stored in the
+                            circular buffer. allocated (int): Actual storage area for
+                            storing the continuous ring buffer.
+
+                            Bigger allocated storage results in less data moves but more
+                            memory consumption. Must be greater than `capacity` (depends on
+                            usage patterns).
+
+            initial_shape (list(row,col,..)): full array size to be allocated. Size must
+                                              match allocated in the `append_axis`
+                                              direction.
+            dtype (type): data type to be stored append_axis (int): axis in which direction
+                          data is appended to the already stored data.
 
         Raises:
-            ValueError: triggered if appends are not row/columnwise (``axis > 1``) - others were not tested yet
+            ValueError: triggered if appends are not row/columnwise (``axis > 1``) - others
+            were not tested yet
         """
         if append_axis > 1:
             raise ValueError("Unexpected append axis, currently 0 and 1 is supported")
@@ -159,7 +164,7 @@ class CircularBuffer(Sequence):
         free size is cb.size() - len(cb)."""
         return self._capacity
 
-    ## Sequence methods follow...
+    # Sequence methods follow...
     def __getitem__(self, item):
         """Return an item or an array, supporting various numpy operations
 
@@ -291,45 +296,3 @@ class CircularBuffer(Sequence):
         container_shape = list(self._arr.shape)
         container_shape[self._append_axis] = len(self)
         return tuple(container_shape)
-
-
-if __name__ == "__main__":
-    # data = np.ones([64,10], dtype='float32')
-    # print data.shape
-
-    # cb = ContinuousRingBuffer(capacity=10, allocated=20, initial_shape=[64,20], dtype=np.float32, append_axis = 1)
-    # cb.append(data)
-
-    cb = ContinuousRingBuffer(
-        capacity=50,
-        allocated=100,
-        initial_shape=[3, 100],
-        dtype=np.float32,
-        append_axis=1,
-    )
-
-    """
-    for i in [1,3,2,4,5,1]:
-        data = np.ones([3,i])*i
-        
-        cb.append(data)
-    
-    cb[0]                           # 0
-    cb[0:10,3]                      # (slice(0, 10, None), 3)
-    cb[3,4]                         # (3, 4)
-    cb[:]
-    cb[np.array([1,2,5]),10]        # (array([1, 2, 5]), 10)
-    cb[:, 3]
-    cb[1:3]
-    cb[:, -5:]
-    """
-
-    print("empty:", cb[0])
-    cb.append(np.ones([3, 1]) * 1)
-    cb.append(np.ones([3, 1]) * 2)
-    cb.append(np.ones([3, 1]) * 3)
-    print("then:", cb[:, :])
-    cb.drop(1)
-    print("drop:", cb[0, :])
-
-logging.getLogger("logger")
