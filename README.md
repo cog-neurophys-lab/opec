@@ -10,6 +10,17 @@ to Opeth.
 
 Tests: [![Tests](https://github.com/cog-neurophys-lab/opez/actions/workflows/python-app.yml/badge.svg)](https://github.com/cog-neurophys-lab/opez/actions/workflows/python-app.yml)
 
+## Installation
+
+```
+pip install opez
+```
+
+
+## Get Started
+
+- Checkout [simple_plotter.py](opez/simple_plotter.py) on how to use the `Client` in your application
+
 ## Heartbeat messages
 
 In order for a client to be detected, it must periodically send heartbeat messages to the
