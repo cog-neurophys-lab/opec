@@ -1,8 +1,11 @@
-# Python Example Client for OpenEphys ZMQ Interface
+# OpenEphys Client (OPEC) for Python 
 
 This project will provide a small library for receiving data from the OpenEphys ZMQ
 interface (currently at version v0.3.2) Initial code and descriptions are from
 https://github.com/open-ephys-plugins/zmq-interface. 
+
+This library is based on code from the [Opeth](https://opeth.readthedocs.io) package by
+Andras Szell and others licensed with GPLv3.
 
 
 ## Heartbeat messages
