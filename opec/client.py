@@ -28,6 +28,7 @@ class Client:
             data_port=data_port,
             heartbeat_msg=HeartBeatMessage(app_name=self.app_name, uuid=self.uuid),
         )
+        self.collector = Collector()
 
     def send_heartbeat(self):
         self.connection.send_heartbeat(self._heartbeat_msg)
