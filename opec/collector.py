@@ -14,6 +14,7 @@ from time import perf_counter as clock
 import logging
 import numpy as np
 from collections import deque, defaultdict
+from opec.collector_interface import CollectorInterface
 from opec.continuous_data import OpenEphysContinuousData
 from opec.events import OpenEphysEvent, OpenEphysSpikeEvent
 from opec.circular_buffer import CircularBuffer
@@ -41,7 +42,7 @@ if DBG_TEXT_DUMP:
     flog = open("textlog.txt", "wt")
 
 
-class Collector:
+class Collector(CollectorInterface):
     """Data storage class for raw analog data, timestamps and event timestamps.
 
     Attributes:
@@ -198,7 +199,7 @@ class Collector:
 
         assert self.databuffer.shape[1] == self.tsbuffer.shape[0]
 
-    def keep_last(self, seconds=None, samples=None, **kwargs):
+    def keep_last(self, seconds: float | None = None, samples: int | None = None):
         """Convenience wrapper function for :attr:`drop_before`.
 
         Args:

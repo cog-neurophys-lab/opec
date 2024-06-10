@@ -1,4 +1,4 @@
-from opec.collector import Collector
+from opec.collector_interface import CollectorInterface
 from opec.connection import Connection
 from opec.messages import HeartBeatMessage
 from uuid import UUID, uuid4
@@ -12,7 +12,7 @@ class Client:
     app_name: str
     uuid: UUID | str
     _heartbeat_msg: HeartBeatMessage
-    collector: Collector | None
+    collector: CollectorInterface | None
     _stop: bool = False
 
     def __init__(
@@ -20,6 +20,7 @@ class Client:
         app_name: str,
         ip: str = "localhost",
         data_port: int = 5556,
+        collector=None,
     ):
         self.app_name = app_name
         self.uuid = str(uuid4())
@@ -28,7 +29,7 @@ class Client:
             data_port=data_port,
             heartbeat_msg=HeartBeatMessage(app_name=self.app_name, uuid=self.uuid),
         )
-        self.collector = Collector()
+        self.collector = collector
 
     def send_heartbeat(self):
         self.connection.send_heartbeat(self._heartbeat_msg)
@@ -71,7 +72,8 @@ class Client:
                 logger.debug("event reply received")
                 self.connection.event_socket_waits_reply = False
 
-            self.collector.keep_last(seconds=1)
+            if self.collector is not None:
+                self.collector.keep_last(seconds=1)
 
 
 def main():

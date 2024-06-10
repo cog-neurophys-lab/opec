@@ -1,4 +1,5 @@
 from opec.client import Client
+import opec.collector
 
 
 def main():
@@ -7,7 +8,8 @@ def main():
     logger = logging.getLogger("logger")
     logger.setLevel(logging.DEBUG)
 
-    c = Client(app_name="Python Test Client")
+    collector = opec.collector.Collector()
+    c = Client(app_name="Python Test Client", collector=collector)
     c.loop()
 
 
