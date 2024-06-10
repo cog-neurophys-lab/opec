@@ -114,21 +114,22 @@ class Collector:
             data: input data received from OE. Multiple channels, multiple samples.
                 (E.g. 35 rows/channels of 640 floating point samples.) Unit value is supposed to be in uV.
         """
+        array = np.array(data.array)
 
         # we accept only 2D arrays!
-        assert len(data.shape) == 2
+        assert len(array.shape) == 2
 
         # TODO: Consider removing this special case
         # we get rid of AUX data (gyroscope) if 35 or 70 channels are present
         if self.drop_aux:
-            if data.shape[0] == 35:
-                data = data[:32]
-            elif data.shape[0] == 70:
-                data = data[:64]
+            if array.shape[0] == 35:
+                array = array[:32]
+            elif array.shape[0] == 70:
+                array = array[:64]
 
         # interpolate timestamps - actually sample index counter
         curr_ts = np.arange(
-            self.timestamp, self.timestamp + data.shape[1], dtype="int64"
+            self.timestamp, self.timestamp + array.shape[1], dtype="int64"
         )
 
         # we start a new collection
@@ -137,6 +138,7 @@ class Collector:
 
         if (
             self.databuffer is not None
+            and self.tsbuffer is not None
             and len(self.databuffer) > 0
             and curr_ts[-1] < self.tsbuffer[0]
         ):
@@ -153,7 +155,7 @@ class Collector:
         if self.databuffer is None:
             # first run: create circular buffer
             itemcnt = 100000
-            shape = list(data.shape)
+            shape = list(array.shape)
             shape[1] = itemcnt * 2
             self.databuffer = CircularBuffer(
                 capacity=itemcnt,
@@ -170,7 +172,7 @@ class Collector:
                 initial_shape=shape,
                 append_axis=0,
             )
-        elif curr_ts[-1] < self.tsbuffer[0]:
+        elif self.tsbuffer is not None and curr_ts[-1] < self.tsbuffer[0]:
             # timestamp jump
             logger.debug("Timestamp jump, dropping everything before")
             self.databuffer.drop(len(self.databuffer))
@@ -179,7 +181,7 @@ class Collector:
             # normal append
             pass
 
-        self.databuffer.append(data)
+        self.databuffer.append(array)
         self.tsbuffer.append(curr_ts)
 
         assert self.databuffer.shape[1] == self.tsbuffer.shape[0]
@@ -267,7 +269,7 @@ class Collector:
         elif event.type == "TTL" and event.event_id == 1:  # rising edge TTL
             self.add_ttl(event)
 
-    def collect(
+    def collect_from_bytes(
         self,
         header: (
             SpikeDataHeaderMessage
@@ -276,7 +278,7 @@ class Collector:
         ),
         data: bytes,
     ):
-        """Collect data from OE messages.
+        """Collect data from OE byte messages.
 
         Args:
             header: header message
@@ -299,6 +301,17 @@ class Collector:
 
         else:
             logger.error(f"Unknown header type: f{type(header)}")
+
+    def collect_from_data(
+        self, data: OpenEphysContinuousData | OpenEphysEvent | OpenEphysSpikeEvent
+    ):
+        """Collect data from already converted OE messages."""
+        if isinstance(data, OpenEphysContinuousData):
+            self.add_data(data)
+        elif isinstance(data, OpenEphysEvent):
+            self.add_event(data)
+        elif isinstance(data, OpenEphysSpikeEvent):
+            self.add_spike(data)
 
     def process_ttl(
         self,

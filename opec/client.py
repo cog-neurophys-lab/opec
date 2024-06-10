@@ -54,7 +54,7 @@ class Client:
                     continue
 
                 if self.collector is not None:
-                    self.collector.collect(header, data)
+                    self.collector.collect_from_bytes(header, data)
                 else:
                     logger.debug(
                         f"Received data without collector: header={header}, data={data}"
