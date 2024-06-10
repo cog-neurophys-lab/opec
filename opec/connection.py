@@ -1,7 +1,16 @@
+from __future__ import annotations
 import zmq
 import time
 from .messages import HeartBeatMessage, header_message_from_string
 import logging
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .messages import (
+        ContinuousDataHeaderMessage,
+        EventDataHeaderMessage,
+        SpikeDataHeaderMessage,
+    )
 
 logger = logging.getLogger("logger")
 
@@ -70,7 +79,15 @@ class Connection:
         logger.debug(f"received message: {message}")
         return message
 
-    def receive(self):
+    def receive(
+        self,
+    ) -> tuple[
+        ContinuousDataHeaderMessage
+        | EventDataHeaderMessage
+        | SpikeDataHeaderMessage
+        | None,
+        bytes | None,
+    ]:
         message = self._receive_multipart_data_message()
 
         if len(message) == 0:

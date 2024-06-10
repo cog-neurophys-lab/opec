@@ -29,7 +29,7 @@ class ContinuousDataHeaderMessage:
     @dataclass
     class ContinuousDataHeaderMessageContent:
         stream: str  # stream name
-        channel_num: str  # local channel index
+        channel_num: int  # local channel index
         num_samples: int  # num of samples in this buffer
         sample_num: int  # index of first sample
         sample_rate: float  # sampling rate of this channel
