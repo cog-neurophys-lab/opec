@@ -10,7 +10,6 @@ Data, TTL and timestamp storage happens in :class:`Collector` class, and
 Spike detection and data compression for raw plotting are performed in :class:`DataProc`.
 """
 
-from __future__ import division, print_function
 import sys
 
 if sys.version_info.major >= 3:
