@@ -101,7 +101,13 @@ def header_message_from_string(
     header_type = json_message["type"]
     try:
         if header_type == "data":
-            return ContinuousDataHeaderMessage(**json_message)
+            header = ContinuousDataHeaderMessage(**json_message)
+            header.content = (
+                ContinuousDataHeaderMessage.ContinuousDataHeaderMessageContent(
+                    **json_message["content"]
+                )
+            )
+            return header
         elif header_type == "event":
             return EventDataHeaderMessage(**json_message)
         elif header_type == "spike":
