@@ -96,7 +96,7 @@ class CircularBuffer(Sequence):
             BufferError: if number of items in array would be over capacity limit after the
             append
         """
-        assert value.ndim == 2, "Only 2D arrays are supported for now"
+        # assert value.ndim == 2, "Only 2D arrays are supported for now"
 
         appendcnt = value.shape[self._append_axis]
         if len(self) + appendcnt > self._capacity:
