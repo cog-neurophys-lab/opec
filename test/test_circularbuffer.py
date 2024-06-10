@@ -1,10 +1,10 @@
-import opec
+import opez
 import numpy as np
 
 
 def test_append():
     itemcnt = 10000
-    cb = opec.CircularBuffer(
+    cb = opez.CircularBuffer(
         capacity=itemcnt,
         initial_shape=(10, itemcnt * 2),
         allocated=itemcnt * 2,

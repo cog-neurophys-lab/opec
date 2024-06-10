@@ -1,6 +1,6 @@
-from opec.collector import Collector
-from opec.continuous_data import OpenEphysContinuousData
-from opec.messages import ContinuousDataHeaderMessage
+from opez.collector import Collector
+from opez.continuous_data import OpenEphysContinuousData
+from opez.messages import ContinuousDataHeaderMessage
 import numpy as np
 
 

@@ -1,5 +1,5 @@
 [project]
-name = "opec"
+name = "opez"
 version = "0.1.0"
 description = "A Python client for the OpenEphys ZMQ Interface"
 license = { text = "GPLv3" }
