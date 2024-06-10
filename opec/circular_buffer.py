@@ -89,14 +89,14 @@ class CircularBuffer(Sequence):
 
         Args:
             value (numpy array with dtype as specified during instantiation): an array of
-            values with the
-                expected shape (all dimensions must match `initial_shape`'s dimensions
-                except the dimension of `append_axis`).
+                values with the expected shape (all dimensions must match `initial_shape`'s
+                dimensions except the dimension of `append_axis`).
 
         Raises:
             BufferError: if number of items in array would be over capacity limit after the
             append
         """
+        assert value.ndim == 2, "Only 2D arrays are supported for now"
 
         appendcnt = value.shape[self._append_axis]
         if len(self) + appendcnt > self._capacity:
@@ -208,7 +208,7 @@ class CircularBuffer(Sequence):
         # growing/circular buffer axis direction with _left_index and _right_index
         upd = items_refined[self._append_axis]
 
-        if type(upd) == int:
+        if isinstance(upd, int):
             upd_idx = self._adjust_index(upd, self._left_index, self._right_index)
             items_refined[self._append_axis] = upd_idx
         elif isinstance(upd, slice):
@@ -229,7 +229,7 @@ class CircularBuffer(Sequence):
                 items_refined[self._append_axis] = upd + self._left_index
             else:  # hack: handle the case when the input array is a bool mask
                 return self[:][tuple(items_refined)]
-        elif type(upd) == list:
+        elif isinstance(upd, list):
             # todo: support negative indices
             items_refined[self._append_axis] = np.array(upd) + self._left_index
 
