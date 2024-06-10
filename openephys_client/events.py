@@ -53,6 +53,20 @@ class OpenEphysEvent:
         del ds["data"]
         return str(ds)
 
+    @staticmethod
+    def from_timestamp(timestamp, sample_num=0):
+        """Debug code to auto-generate TTLs based on threshold level in case of file playback."""
+        # {'event_channel': 0, 'event_id': 1, u'timestamp': 519170, 'base_timestamp': 518912, 'num_bytes': 8, 'type': 'TTL', 'sample_num': 258}
+        e_template = {
+            "type": 3,
+            "timestamp": timestamp,
+            "event_id": 1,
+            "base_timestamp": timestamp - sample_num,
+            "sample_num": sample_num,
+            "num_bytes": 0,
+        }
+        return OpenEphysEvent(e_template)
+
 
 class OpenEphysSpikeEvent:
 
