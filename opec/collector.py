@@ -14,8 +14,14 @@ from time import perf_counter as clock
 import logging
 import numpy as np
 from collections import deque, defaultdict
-from openephys_client.events import OpenEphysEvent
-from openephys_client.circular_buffer import CircularBuffer
+from opec.continuous_data import OpenEphysContinuousData
+from opec.events import OpenEphysEvent, OpenEphysSpikeEvent
+from opec.circular_buffer import CircularBuffer
+from opec.messages import (
+    SpikeDataHeaderMessage,
+    EventDataHeaderMessage,
+    ContinuousDataHeaderMessage,
+)
 
 EVENT_ROI = (
     -0.02,
@@ -95,7 +101,7 @@ class Collector:
 
                 exit()
 
-    def add_data(self, data):
+    def add_data(self, data: OpenEphysContinuousData):
         """Append a new chunk of analog channel measurements to the end of the storage array.
 
         Auxiliary channel data (gyroscopes) are automatically removed if 35 or 70 channels
@@ -112,6 +118,7 @@ class Collector:
         # we accept only 2D arrays!
         assert len(data.shape) == 2
 
+        # TODO: Consider removing this special case
         # we get rid of AUX data (gyroscope) if 35 or 70 channels are present
         if self.drop_aux:
             if data.shape[0] == 35:
@@ -253,13 +260,53 @@ class Collector:
         if DBG_TEXT_DUMP:
             flog.write("TTL: %s\n" % str(ttl))
 
+    def add_event(self, event):
+        """Add/update event or timestamp."""
+        if event.type == "TIMESTAMP":
+            self.update_ts(event.timestamp)
+        elif event.type == "TTL" and event.event_id == 1:  # rising edge TTL
+            self.add_ttl(event)
+
+    def collect(
+        self,
+        header: (
+            SpikeDataHeaderMessage
+            | EventDataHeaderMessage
+            | ContinuousDataHeaderMessage
+        ),
+        data: bytes,
+    ):
+        """Collect data from OE messages.
+
+        Args:
+            header: header message
+            data : bytes: content of data message
+        """
+        if isinstance(header, ContinuousDataHeaderMessage):
+            self.add_data(
+                OpenEphysContinuousData.from_message(header=header, data=data)
+            )
+
+        elif isinstance(header, EventDataHeaderMessage):
+            if header.data_size > 0:
+                event = OpenEphysEvent(header.content, data)
+            else:
+                event = OpenEphysEvent(header.content)
+            self.add_event(event)
+
+        elif isinstance(header, SpikeDataHeaderMessage):
+            self.add_spike(OpenEphysSpikeEvent(header.spike, data))
+
+        else:
+            logger.error(f"Unknown header type: f{type(header)}")
+
     def process_ttl(
         self,
         start_offset=EVENT_ROI[0],
         end_offset=EVENT_ROI[1],
         ttl_ch=None,
         trigger_holdoff=0.001,
-        **kwargs
+        **kwargs,
     ):
         """Process a TTL (event), return data and timestamp around event on success
         or (None, None) otherwise - using first TTL from ttl_ch.
@@ -552,7 +599,7 @@ class DataProc(object):
         base_timestamp,
         ch=0,
         threshold=SPIKE_THRESHOLD,
-        **kwargs
+        **kwargs,
     ):
         """Generate TTL signals based on threshold in a channel of data.
 

@@ -1,3 +1,4 @@
+from opec.collector import Collector
 from .connection import Connection
 from .messages import HeartBeatMessage
 from uuid import UUID, uuid4
@@ -11,6 +12,8 @@ class Client:
     app_name: str
     uuid: UUID | str
     _heartbeat_msg: HeartBeatMessage
+    collector: Collector | None
+    _stop: bool = False
 
     def __init__(
         self,
@@ -30,8 +33,8 @@ class Client:
         self.connection.send_heartbeat(self._heartbeat_msg)
 
     def loop(self):
-
-        while True:
+        # TODO: Consider making this loop async
+        while not self._stop:
             self.connection.check_connection()
 
             # TODO: move this to `Connection` class
@@ -44,9 +47,19 @@ class Client:
             if self.connection.data_socket in socks:
                 header, data = self.connection.receive()
 
-                # TODO: do something with the data
-                # ...
-                print(type(header))
+                if header is None or data is None:
+                    logger.info(
+                        f"Received data without header or data: header={header}, data={data}"
+                    )
+                    continue
+
+                if self.collector is not None:
+                    self.collector.collect(header, data)
+                else:
+                    logger.debug(
+                        f"Received data without collector: header={header}, data={data}"
+                    )
+                    continue
 
             # data in the event/heartbeat socket
             elif (
@@ -56,14 +69,3 @@ class Client:
                 message = self.connection.event_socket.recv()
                 logger.debug("event reply received")
                 self.connection.event_socket_waits_reply = False
-
-        return True
-
-
-def main():
-    c = Client(app_name="Foo")
-    c.loop()
-
-
-if __name__ == "__main__":
-    main()
