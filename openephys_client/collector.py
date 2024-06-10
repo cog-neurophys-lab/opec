@@ -10,23 +10,12 @@ Data, TTL and timestamp storage happens in :class:`Collector` class, and
 Spike detection and data compression for raw plotting are performed in :class:`DataProc`.
 """
 
-import sys
-
-if sys.version_info.major >= 3:
-    from time import perf_counter as clock
-else:
-    from time import clock
-
-import time
+from time import perf_counter as clock
 import logging
 import numpy as np
-import math
-from collections import OrderedDict, deque, defaultdict
-
-# from matplotlib import pyplot as plt
-
-from openephys import generate_ttl
-from circbuff import CircularBuffer
+from collections import deque, defaultdict
+from openephys_client.events import OpenEphysEvent
+from openephys_client.circular_buffer import CircularBuffer
 
 EVENT_ROI = (
     -0.02,
@@ -46,7 +35,7 @@ if DBG_TEXT_DUMP:
     flog = open("textlog.txt", "wt")
 
 
-class Collector(object):
+class Collector:
     """Data storage class for raw analog data, timestamps and event timestamps.
 
     Attributes:
@@ -60,6 +49,13 @@ class Collector(object):
         drop_aux (bool): Adjusted through :meth:`set_drop_aux`, affects whether auxiliary data (the
             3 gyroscope channels) is to be filtered or not.
     """
+
+    databuffer: CircularBuffer | None
+    tsbuffer: CircularBuffer | None
+    spikes: deque
+    ttls: deque
+    starttime: float
+    prev_trigger_ts: defaultdict
 
     def __init__(self):
 
@@ -98,20 +94,6 @@ class Collector(object):
                 )
 
                 exit()
-
-    def update_ts(self, timestamp):
-        """Required for old OE version that sent timestamps separately as events,
-        kept it for backward compatibility.
-
-        Args:
-            timestamp (int): stored in :attr:`timestamp` for later timestamp interpolation calculations
-                when data arrives.
-        """
-        self.timestamp = timestamp
-        if DBG_TEXT_DUMP:
-            flog.write("Timestamp: %d\n" % self.timestamp)
-
-        now = clock()
 
     def add_data(self, data):
         """Append a new chunk of analog channel measurements to the end of the storage array.
@@ -414,7 +396,7 @@ class DataProc(object):
 
         self.autottl_holdoff_until = 0
 
-    def compress(self, data, rate, timestamps=None):
+    def compress(self, data: CircularBuffer, rate: int, timestamps: CircularBuffer):
         """Compress a 2D matrix column-wise by keeping the min and max values of the compressed chunks.
 
         Used by real time raw display to reduce number of points to be plotted.
@@ -597,7 +579,7 @@ class DataProc(object):
         ttl_event = None
         if spikepos and spikepos[0]:
             ttlts = spikestamps[0][0]
-            ttl_event = generate_ttl(ttlts, ttlts - base_timestamp)
+            ttl_event = OpenEphysEvent.from_timestamp(ttlts, ttlts - base_timestamp)
             self.autottl_holdoff_until = ttlts + self.autottl_holdoff_value
 
         return ttl_event
