@@ -1,10 +1,39 @@
 from opez.collector_interface import CollectorInterface
 from opez.connection import Connection
-from opez.messages import HeartBeatMessage
+from opez.continuous_data import OpenEphysContinuousData
+from opez.events import OpenEphysEvent, OpenEphysSpikeEvent
+from opez.messages import (
+    ContinuousDataHeaderMessage,
+    EventDataHeaderMessage,
+    HeartBeatMessage,
+    SpikeDataHeaderMessage,
+)
 from uuid import UUID, uuid4
 import logging
 
 logger = logging.getLogger("logger")
+
+
+def data_from_bytes(
+    header: (
+        SpikeDataHeaderMessage | EventDataHeaderMessage | ContinuousDataHeaderMessage
+    ),
+    data: bytes,
+):
+    if isinstance(header, ContinuousDataHeaderMessage):
+        return OpenEphysContinuousData.from_message(header=header, data=data)
+
+    elif isinstance(header, EventDataHeaderMessage):
+        if header.data_size > 0:
+            event = OpenEphysEvent(header.content, data)
+        else:
+            event = OpenEphysEvent(header.content)
+        return event
+
+    elif isinstance(header, SpikeDataHeaderMessage):
+        return OpenEphysSpikeEvent(header.spike, data)
+
+    return None
 
 
 class Client:
@@ -34,53 +63,60 @@ class Client:
     def send_heartbeat(self):
         self.connection.send_heartbeat(self._heartbeat_msg)
 
-    def loop(self):
-        # TODO: Consider making this loop async
-        while not self._stop:
-            self.connection.check_connection()
+    def update(self):
+        self.connection.check_connection()
 
-            # TODO: move this to `Connection` class
-            socks = dict(self.connection.poller.poll(1))
-            if not socks:
-                logger.debug("no data received")
-                continue
+        socks = dict(self.connection.poller.poll(1))
+        if not socks:
+            logger.debug("no data received")
+            return None
 
-            # data in the data socket
-            if self.connection.data_socket in socks:
-                header, data = self.connection.receive()
+        # data in the data socket
+        if self.connection.data_socket in socks:
+            header, data = self.connection.receive()
 
-                if header is None or data is None:
-                    logger.info(
-                        f"Received data without header or data: header={header}, data={data}"
-                    )
-                    continue
+            if header is None or data is None:
+                logger.info(
+                    f"Received data without header or data: header={header}, data={data}"
+                )
+                return None
 
-                if self.collector is not None:
-                    self.collector.collect_from_bytes(header, data)
-                else:
-                    logger.debug(
-                        f"Received data without collector: header={header}, data={data}"
-                    )
-                    continue
-
-            # data in the event/heartbeat socket
-            elif (
-                self.connection.event_socket in socks
-                and self.connection.event_socket_waits_reply
-            ):
-                message = self.connection.event_socket.recv()
-                logger.debug("event reply received")
-                self.connection.event_socket_waits_reply = False
+            parsed_data = data_from_bytes(header, data)
 
             if self.collector is not None:
-                self.collector.keep_last(seconds=1)
+                self.collector.collect_from_data(parsed_data)
+            else:
+                logger.debug(
+                    f"Received data without collector: header={header}, data={data}"
+                )
+                return parsed_data
+
+        # data in the event/heartbeat socket
+        elif (
+            self.connection.event_socket in socks
+            and self.connection.event_socket_waits_reply
+        ):
+            message = self.connection.event_socket.recv()
+            logger.debug("event reply received")
+            self.connection.event_socket_waits_reply = False
+
+    def loop(self):
+        logger.debug("loop started")
+        data = self.update()
+        while not self._stop:
+            data = self.update()
+            logger.debug(f"Received data: {data}")
+            if data is not None:
+                logger.warning(f"Received empty data: {data}")
+
+        logger.debug("loop exited")
 
 
 def main():
     import logging
 
     logger = logging.getLogger("logger")
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.WARNING)
 
     c = Client(app_name="Python Test Client")
     c.loop()
