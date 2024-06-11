@@ -5,7 +5,7 @@ import opez.collector
 def main():
     import logging
 
-    logger = logging.getLogger("logger")
+    logger = logging.getLogger("opez")
     logger.setLevel(logging.DEBUG)
 
     collector = opez.collector.Collector()

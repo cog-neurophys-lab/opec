@@ -11,7 +11,7 @@ from opez.messages import (
 from uuid import UUID, uuid4
 import logging
 
-logger = logging.getLogger("logger")
+logger = logging.getLogger(__name__)
 
 
 def data_from_bytes(
@@ -63,10 +63,13 @@ class Client:
     def send_heartbeat(self):
         self.connection.send_heartbeat(self._heartbeat_msg)
 
-    def update(self):
+    def update(
+        self,
+    ) -> OpenEphysContinuousData | OpenEphysEvent | OpenEphysSpikeEvent | None:
         self.connection.check_connection()
 
-        socks = dict(self.connection.poller.poll(1))
+        socks = self.connection.check_sockets_for_data()
+
         if not socks:
             logger.debug("no data received")
             return None
@@ -84,12 +87,13 @@ class Client:
             parsed_data = data_from_bytes(header, data)
 
             if self.collector is not None:
-                self.collector.collect_from_data(parsed_data)
+                self.collector.collect_data(parsed_data)
             else:
                 logger.debug(
                     f"Received data without collector: header={header}, data={data}"
                 )
-                return parsed_data
+
+            return parsed_data
 
         # data in the event/heartbeat socket
         elif (
@@ -99,6 +103,8 @@ class Client:
             message = self.connection.event_socket.recv()
             logger.debug("event reply received")
             self.connection.event_socket_waits_reply = False
+
+        return None
 
     def loop(self):
         logger.debug("loop started")
@@ -115,7 +121,7 @@ class Client:
 def main():
     import logging
 
-    logger = logging.getLogger("logger")
+    logger = logging.getLogger(__name__)
     logger.setLevel(logging.WARNING)
 
     c = Client(app_name="Python Test Client")
