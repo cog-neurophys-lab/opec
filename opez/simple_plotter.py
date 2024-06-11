@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 
 # import matplotlib
@@ -5,10 +6,58 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 import opez
-import opez.continuous_data
+import opez.collector
+from opez.continuous_data import OpenEphysContinuousData
+from opez.events import OpenEphysEvent, OpenEphysSpikeEvent
+
+logger = logging.getLogger("SimplePlotter")
+
+
+class SimpleCollector(opez.collector.CollectorInterface):
+    """Simple collector for a single channel that rolls existing data backwards."""
+
+    continuous_data: np.ndarray
+    added_samples: int = 0
+    buffer_size: int
+
+    def __init__(self, buffer_size: int = 10000):
+        self.buffer_size = buffer_size
+        self.continuous_data = np.empty(buffer_size, dtype=np.float32)
+
+    def add_continuous_data(self, data: OpenEphysContinuousData):
+        pass
+
+    def get_continuous_data(self) -> OpenEphysContinuousData | np.ndarray:
+        return self.continuous_data
+
+    def add_spike(self, spike: OpenEphysSpikeEvent):
+        pass
+
+    def add_ttl(self, ttl: OpenEphysEvent):
+        pass
+
+    def add_event(self, event: OpenEphysEvent):
+        pass
+
+    def collect_data(
+        self, data: OpenEphysContinuousData | OpenEphysSpikeEvent | OpenEphysEvent
+    ):
+        if isinstance(data, OpenEphysContinuousData):
+            # append the data to the end of the buffer using np.roll
+            self.continuous_data = np.roll(self.continuous_data, -data.array.size)
+            self.continuous_data[-data.array.size :] = data.array
+            self.added_samples += data.array.size
+        elif isinstance(data, OpenEphysSpikeEvent):
+            pass
+        elif isinstance(data, OpenEphysEvent):
+            pass
+
+    def keep_last(self, seconds: float | None = None, samples: int | None = None):
+        pass
 
 
 class SimplePlotter:
+
     def __init__(self, sampling_rate):
         """
         :param sampling_rate: the sampling rate of the process
@@ -19,30 +68,33 @@ class SimplePlotter:
         through the process borders. The constructor gets called in the
         """
 
-        self.event_no = 0
+        logger.info("Init SimplePlotter")
         self.app_name = "Plot Process"
-        self.client = opez.Client(app_name=self.app_name, collector=None)
-        self.isTesting = True
-        print("in init")
-        self.y = np.empty(0, dtype=np.float32)  # the buffer for the data
-        # self.chan_in = 10
-        self.plotting_interval = 1000.0  # in ms
-        self.frame_count = 0
-        self.frame_max = 0
+        self.client = opez.Client(app_name=self.app_name)
+        self.collector = SimpleCollector(buffer_size=40000)
+        logger.info("Client created")
+        self.y = np.empty(
+            self.collector.buffer_size, dtype=np.float32
+        )  # the buffer for the data
         self.sampling_rate = sampling_rate
         self.app_name = "Simple Plotter"
+        self.selected_channel = 0
+
         # matplotlib members, initialized to None
         self.ax = None
         self.hl = None
         self.figure = None
         self.num_samples = 0
-        self.pipe = None
         self.code = 0
+
+    def __del__(self):
+        logger.info("SimplePlotter deleted")
+        del self.client
 
     def startup(self):
         # build the plot
         ylim0 = 200
-        print("starting plot")
+        logger.info("Init axes")
         self.figure, self.ax = plt.subplots()
         plt.subplots_adjust(left=0.1, bottom=0.2)
         self.ax.set_facecolor("#001230")
@@ -67,59 +119,50 @@ class SimplePlotter:
         self.ax.set_ylim(-ylim0, ylim0)
         # initialize timer
         timer = self.figure.canvas.new_timer(
-            interval=50,
+            interval=20,
         )
         timer.add_callback(self.callback)
         timer.start()
         plt.show(block=True)
 
-    @staticmethod
-    def param_config():
-        chan_labels = list(range(32))
-        return (("int_set", "chan_in", chan_labels),)
-
     def update_plot(self, n_arr):
-        # setting up frame dependent parameters
-        self.num_samples = int(n_arr.shape[0])
+
+        logger.info("update_plot")
         events = []
-        frame_time = 1000.0 * self.num_samples / self.sampling_rate
-        self.frame_max = int(self.plotting_interval / frame_time)
-        # increment the buffer
-        self.y = np.append(self.y, n_arr)
-        self.frame_count += 1
+        self.y = n_arr
 
-        if self.frame_count == self.frame_max:
-            # update the plot
-            x = np.arange(len(self.y), dtype=np.float32) * 1000.0 / self.sampling_rate
-            self.hl.set_ydata(self.y)
-            self.hl.set_xdata(x)
-            # print ("shape(x): ", x.shape, " shape(y): ", self.y.shape,
-            # " min:", np.min(self.y), " max:", np.max(self.y) )
-            self.ax.set_xlim(0.0, self.plotting_interval)
-            self.ax.relim()
-            self.ax.autoscale_view(True, True, False)
-            self.figure.canvas.draw()
-            self.figure.canvas.flush_events()
+        # update the plot
+        x = np.arange(self.y.size, dtype=np.float32) * 1000.0 / self.sampling_rate
+        self.hl.set_ydata(self.y)
+        self.hl.set_xdata(x)
+        self.ax.set_xlim(0.0, x[-1])
+        self.ax.relim()
+        self.ax.autoscale_view(True, True, False)
+        self.figure.canvas.draw()
+        self.figure.canvas.flush_events()
 
-            self.frame_count = 0
-            self.y = np.empty(0, dtype=np.float32)
-
-        # if np.random.random() < 0.5:
-        #     events.append({'type': 3, 'sampleNum': 0, 'eventId': self.code})
-        #     self.code += 1
         return events
 
     def callback(self):
 
         data = self.client.update()
-        if data is not None and isinstance(
-            data, opez.continuous_data.OpenEphysContinuousData
-        ):
-            self.update_plot(data.array)
+        while data is not None and self.collector.added_samples < 10000:
+            data = self.client.update()
+            if (
+                data is not None
+                and isinstance(data, OpenEphysContinuousData)
+                and data.header.content.channel_num == self.selected_channel
+            ):
+                self.collector.collect_data(data)
+
+        self.collector.added_samples = 0
+
+        self.update_plot(self.collector.get_continuous_data())
 
         return True
 
 
 if __name__ == "__main__":
+    logging.basicConfig(encoding="utf-8", level=logging.INFO)
     plotter = SimplePlotter(40000)
     plotter.startup()
