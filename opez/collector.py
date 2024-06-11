@@ -192,6 +192,10 @@ class Collector(CollectorInterface):
 
         self.drop_before(self.timestamp - self.max_data_amount)
 
+    def get_continuous_data(self):
+        """Accessor function for the :attr:`databuffer`."""
+        return self.databuffer
+
     def drop_before(self, timestamp):
         """Drop old data which is not required for any of the various displays."""
 
