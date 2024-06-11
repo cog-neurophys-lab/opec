@@ -24,6 +24,9 @@ from opez.messages import (
     ContinuousDataHeaderMessage,
 )
 
+logger = logging.getLogger(__name__)
+
+
 EVENT_ROI = (
     -0.02,
     0.05,
@@ -102,7 +105,7 @@ class Collector(CollectorInterface):
 
                 exit()
 
-    def add_data(self, data: OpenEphysContinuousData):
+    def add_continuous_data(self, data: OpenEphysContinuousData):
         """Append a new chunk of analog channel measurements to the end of the storage array.
 
         Auxiliary channel data (gyroscopes) are automatically removed if 35 or 70 channels
@@ -286,7 +289,7 @@ class Collector(CollectorInterface):
             data : bytes: content of data message
         """
         if isinstance(header, ContinuousDataHeaderMessage):
-            self.add_data(
+            self.add_continuous_data(
                 OpenEphysContinuousData.from_message(header=header, data=data)
             )
 
@@ -303,12 +306,12 @@ class Collector(CollectorInterface):
         else:
             logger.error(f"Unknown header type: f{type(header)}")
 
-    def collect_from_data(
+    def collect_data(
         self, data: OpenEphysContinuousData | OpenEphysEvent | OpenEphysSpikeEvent
     ):
         """Collect data from already converted OE messages."""
         if isinstance(data, OpenEphysContinuousData):
-            self.add_data(data)
+            self.add_continuous_data(data)
         elif isinstance(data, OpenEphysEvent):
             self.add_event(data)
         elif isinstance(data, OpenEphysSpikeEvent):
@@ -644,6 +647,3 @@ class DataProc(object):
             self.autottl_holdoff_until = ttlts + self.autottl_holdoff_value
 
         return ttl_event
-
-
-logger = logging.getLogger("logger")

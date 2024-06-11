@@ -1,17 +1,17 @@
 from abc import ABC, abstractmethod
+import numpy as np
 from opez.events import OpenEphysEvent, OpenEphysSpikeEvent
 from opez.continuous_data import OpenEphysContinuousData
-from opez.messages import (
-    ContinuousDataHeaderMessage,
-    SpikeDataHeaderMessage,
-    EventDataHeaderMessage,
-)
 
 
 class CollectorInterface(ABC):
 
     @abstractmethod
-    def add_data(self, data: OpenEphysContinuousData):
+    def add_continuous_data(self, data: OpenEphysContinuousData):
+        pass
+
+    @abstractmethod
+    def get_continuous_data(self) -> OpenEphysContinuousData | np.ndarray:
         pass
 
     @abstractmethod
@@ -27,19 +27,9 @@ class CollectorInterface(ABC):
         pass
 
     @abstractmethod
-    def collect_from_bytes(
-        self,
-        header: (
-            ContinuousDataHeaderMessage
-            | EventDataHeaderMessage
-            | SpikeDataHeaderMessage
-        ),
-        data: bytes,
+    def collect_data(
+        self, data: OpenEphysContinuousData | OpenEphysSpikeEvent | OpenEphysEvent
     ):
-        pass
-
-    @abstractmethod
-    def collect_from_data(self, data):
         pass
 
     @abstractmethod

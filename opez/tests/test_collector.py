@@ -27,6 +27,6 @@ def test_collect_continuous_data():
     )
 
     collector = Collector()
-    collector.collect_from_data(data)
+    collector.collect_data(data)
     assert collector.has_data()
     assert len(collector.databuffer) == 10
